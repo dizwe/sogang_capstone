@@ -1,5 +1,6 @@
 
 const express = require('express')
+const requests = require('requests');
 const app = express()
 const fs = require('fs');
 
@@ -50,6 +51,31 @@ app.post('/', (req, res) => {
   got_json.time = getTimeStamp();
   got_json.ip = req.connection.remoteAddress.replace('::ffff:','');
   res.json(got_json);
+})
+
+app.get('/hapcheon_jungang', (req, res) => {
+  requests('https://8oi9s0nnth.apigw.ntruss.com/corona19-masks/v1/storesByAddr/json?address=%EA%B2%BD%EC%83%81%EB%82%A8%EB%8F%84%20%ED%95%A9%EC%B2%9C%EA%B5%B0')
+  .on('data', function (chunk) {
+    let father_pharm = JSON.parse(chunk).stores.filter(x=>x.code==="38820609")[0];
+    
+    let time = father_pharm.created_at;
+    let result;
+    if(father_pharm.remain_stat == 'plenty'){
+      result = `${time}에 확인해봤는데, <font color="green" font size="6">100개 이상 있어요</font>`;
+    }else if(father_pharm.remain_stat == 'some'){
+      result = `${time}에 확인해봤는데, <font color="yellow" font size="6">30개에서 100개 사이 있어요</font>`;
+    }else if(father_pharm.remain_stat == 'few'){
+      result = `${time}에 확인해봤는데,  <font color="red" font size="6">30개 미만 있어요</font>`;
+    }else if(father_pharm.remain_stat == 'empty'){
+      result = `${time}에 확인해봤는데, <font color="grey" font size="6">1개 이하 있어요</font>`;
+    }
+
+    res.send(result);
+  })
+  .on('end', function (err) {
+    if (err) return console.log('connection closed due to errors', err);
+    return; 
+  });
 })
 
 app.get('/file', (req, res,next) => {
