@@ -32,11 +32,7 @@ if (n.length < digits) {
 return zero + n;
 }
 
-
-  
-  
-app.get('/', (req, res) => res.send('Hello World!'))
-app.get('/get', (req, res) => {
+app.get('/', (req, res) => {
   let got_json = req.query;
   got_json.email = 'dizwe2716@gmail.com';
   got_json.stuno = '20140132';
@@ -52,6 +48,9 @@ app.post('/', (req, res) => {
   got_json.ip = req.connection.remoteAddress.replace('::ffff:','');
   res.json(got_json);
 })
+
+
+
 
 app.get('/hapcheon_jungang', (req, res) => {
   requests('https://8oi9s0nnth.apigw.ntruss.com/corona19-masks/v1/storesByAddr/json?address=%EA%B2%BD%EC%83%81%EB%82%A8%EB%8F%84%20%ED%95%A9%EC%B2%9C%EA%B5%B0')
