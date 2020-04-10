@@ -14,7 +14,7 @@ app.set('view engine', 'handlebars');
 app.use(express.json()) // for parsing application/json
 app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
 const port = 8000
-
+app.set('json spaces', 2); // res.json 할 떄 예쁘게 보이기
 mysql = require('mysql');
 var connection = mysql.createConnection({
     host: 'localhost',
@@ -64,6 +64,7 @@ function insert_sensor(value, device, unit, type,  seq, ip) {
   });
 }
 
+//////////////////// 과제라 급하게... 간단히....
 app.get('/', (req, res) => {
   let got_json = req.query;
   got_json.email = 'dizwe2716@gmail.com';
@@ -81,6 +82,7 @@ app.post('/', (req, res) => {
   res.json(got_json);
 })
 
+//////////////////// RANDOM DB 넣는 코드
 // ALTER USER ‘me’@‘localhost' IDENTIFIED WITH mysql_native_password BY ‘pass’ 같은 방식으로 해줘야
 // Client does not support authentication protocol requested by server; consider upgrading MySQL client 에러가 안남
 app.get('/log', function(req, res) {
@@ -118,6 +120,7 @@ app.get("/chart", function(req, res) {
   });
 });
 
+//////////////////////////////// 10분마다 온도 긁어오는 과제
 // Timer in node.js
 function cron_log(arg) {
   // ‘기상청 RSS’ 를 검색하여 기상청이 계정인증 없이 액세스를 허용하는 RSS를 이용하여 
@@ -140,7 +143,7 @@ function cron_log(arg) {
 
 setInterval(cron_log, 600000);
 
-
+//////////// 우리 약국 데이터 긁어오는 코드
 app.get('/hapcheon_jungang', (req, res) => {
   requests('https://8oi9s0nnth.apigw.ntruss.com/corona19-masks/v1/storesByAddr/json?address=%EA%B2%BD%EC%83%81%EB%82%A8%EB%8F%84%20%ED%95%A9%EC%B2%9C%EA%B5%B0')
   .on('data', function (chunk) {
@@ -165,6 +168,44 @@ app.get('/hapcheon_jungang', (req, res) => {
     return; 
   });
 })
+
+
+/////////////////////
+app.get('/temp_log', function(req, res) {
+  r = req.query;
+  obj = {};
+  obj.device_id = r.device_id;
+  obj.seq_num = r.seq_num;
+  obj.temperature = r.temperature_value;
+
+  var query = connection.query('insert into my_temperature set ?', obj, function(err, rows, cols) {
+    if (err) throw err;
+    console.log("database insertion ok= %j", obj);
+    return res.json({"device_id":r.device_id, "status":"ok", "time":getTimeStamp()});
+  });
+});
+
+app.get("/temp_data", function(req, res) {
+  if(req.query.device_id.length>0){
+    var qstr = 'select * from my_temperature where device_id=? and written_datetime >  date_sub(now(), interval 1 day)';
+  }else{
+    var qstr = 'select * from my_temperature where written_datetime >  date_sub(now(), interval 1 day)';
+  }
+    connection.query(qstr, [req.query.device_id],function(err, rows, cols) {
+      if (err) {
+        res.send('query error: '+ qstr);
+        throw err;
+      }
+
+      console.log("Got "+ rows.length +" records");
+      result_json = []
+      for (var i=0; i< rows.length; i++) {
+        result_json.push(rows[i]);
+      }
+      // res.send(JSON.stringify({...result_json}, null, '\t'));
+      res.json({...result_json});
+    });
+});
 
 app.get('/file', (req, res,next) => {
     fs.writeFile('test-folder/test.txt', JSON.stringify({1:1}), (err) => {
